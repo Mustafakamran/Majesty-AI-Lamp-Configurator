@@ -20,10 +20,46 @@ const configNames = {
     'Arabic': 'Arabic'
 };
 
+// Configuration options for preloading
+const bases = ['Red', 'Red Matellic', 'Black', 'White', 'Gold', 'Silver'];
+const rims = ['Golden Ring', 'Silver Ring'];
+const patterns = ['Triangle', 'Star', 'Arabic'];
+
 // Initialize the application
 function init() {
     setupEventListeners();
     updateProduct();
+    // Start preloading after initial render to prioritize first paint
+    setTimeout(preloadImages, 1000);
+}
+
+// Preload all possible image combinations
+function preloadImages() {
+    console.log('Starting image preload...');
+    let loadedCount = 0;
+    const totalImages = bases.length * rims.length * patterns.length;
+
+    rims.forEach(rim => {
+        bases.forEach(base => {
+            patterns.forEach(pattern => {
+                let imagePath;
+                if (rim === 'Golden Ring') {
+                    imagePath = `renders/Golden Ring/${base} - Golden Ring/${pattern} - ${base}.webp`;
+                } else {
+                    imagePath = `renders/Silver Ring/${base} - Silver Ring/Silver Ring - ${pattern} - ${base}.webp`;
+                }
+
+                const img = new Image();
+                img.onload = () => {
+                    loadedCount++;
+                    if (loadedCount === totalImages) {
+                        console.log('All images preloaded successfully');
+                    }
+                };
+                img.src = imagePath;
+            });
+        });
+    });
 }
 
 // Setup event listeners for all control buttons
