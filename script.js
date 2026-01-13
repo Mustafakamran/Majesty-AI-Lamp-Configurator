@@ -70,11 +70,11 @@ function updateProductImage() {
     let imagePath;
 
     if (config.rim === 'Golden Ring') {
-        // Golden Ring path: renders/Golden Ring/[Base] - Golden Ring/[Pattern] - [Base].png
-        imagePath = `renders/Golden Ring/${config.base} - Golden Ring/${config.pattern} - ${config.base}.png`;
+        // Golden Ring path: renders/Golden Ring/[Base] - Golden Ring/[Pattern] - [Base].webp
+        imagePath = `renders/Golden Ring/${config.base} - Golden Ring/${config.pattern} - ${config.base}.webp`;
     } else {
-        // Silver Ring path: renders/Silver Ring/[Base] - Silver Ring/Silver Ring - [Pattern] - [Base].png
-        imagePath = `renders/Silver Ring/${config.base} - Silver Ring/Silver Ring - ${config.pattern} - ${config.base}.png`;
+        // Silver Ring path: renders/Silver Ring/[Base] - Silver Ring/Silver Ring - [Pattern] - [Base].webp
+        imagePath = `renders/Silver Ring/${config.base} - Silver Ring/Silver Ring - ${config.pattern} - ${config.base}.webp`;
     }
 
     console.log('Loading image:', imagePath);
