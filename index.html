@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Majesty - Luxury AI Lamp. Customize your perfect lamp with our interactive configurator. Choose from premium colors and elegant patterns.">
+    <title>Majesty - Luxury AI Lamp Configurator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Main Product Display - Fullscreen -->
+    <main class="main-display">
+        <div class="product-container">
+            <img id="productImage" src="renders/default.png" alt="Majesty Lamp" class="product-image">
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="bottom-bar">
+            <div class="product-info-bar">
+                <div class="product-name-section">
+                    <h2 class="product-model">Majesty</h2>
+                    <p class="product-specs">LUXURY AI LAMP • <span id="engineSpec">RED</span></p>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-secondary" id="summaryBtn">
+                        <span>SUMMARY</span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                    <button class="btn-primary" id="addToCartBtn">
+                        <span>ADD TO CART</span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Right Sidebar - Customization Controls -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h3 class="sidebar-title">Majesty AI Lamp</h3>
+        </div>
+
+        <div class="customization-controls">
+            <!-- Base Color Selection -->
+            <div class="control-section">
+                <h3 class="control-title">Base Color</h3>
+                <div class="control-options">
+                    <button class="control-btn active" data-type="base" data-value="Red" title="Red">
+                        <span class="color-swatch" style="background: #dc2626;"></span>
+                    </button>
+                    <button class="control-btn" data-type="base" data-value="Red Matellic" title="Red Metallic">
+                        <span class="color-swatch"
+                            style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);"></span>
+                    </button>
+                    <button class="control-btn" data-type="base" data-value="Black" title="Black">
+                        <span class="color-swatch" style="background: #1a1a1a;"></span>
+                    </button>
+                    <button class="control-btn" data-type="base" data-value="White" title="White">
+                        <span class="color-swatch" style="background: #ffffff;"></span>
+                    </button>
+                    <button class="control-btn" data-type="base" data-value="Gold" title="Gold">
+                        <span class="color-swatch"
+                            style="background: linear-gradient(135deg, #fbbf24 0%, #d4a574 100%);"></span>
+                    </button>
+                    <button class="control-btn" data-type="base" data-value="Silver" title="Silver">
+                        <span class="color-swatch"
+                            style="background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%);"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Rim Color Selection -->
+            <div class="control-section">
+                <h3 class="control-title">Rim Finish</h3>
+                <div class="control-options">
+                    <button class="control-btn active" data-type="rim" data-value="Golden Ring" title="Golden Ring">
+                        <span class="color-swatch"
+                            style="background: linear-gradient(135deg, #fbbf24 0%, #d4a574 100%);"></span>
+                    </button>
+                    <button class="control-btn" data-type="rim" data-value="Silver Ring" title="Silver Ring">
+                        <span class="color-swatch"
+                            style="background: linear-gradient(135deg, #e5e7eb 0%, #cbd5e1 100%);"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pattern Selection -->
+            <div class="control-section">
+                <h3 class="control-title">Pattern Design</h3>
+                <div class="control-options">
+                    <button class="control-btn active" data-type="pattern" data-value="Triangle" title="Triangle">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <polygon points="50,25 80,75 20,75" fill="currentColor" />
+                        </svg>
+                    </button>
+                    <button class="control-btn" data-type="pattern" data-value="Star" title="Star">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <polygon points="50,15 61,40 88,40 67,57 75,85 50,68 25,85 33,57 12,40 39,40"
+                                fill="currentColor" />
+                        </svg>
+                    </button>
+                    <button class="control-btn" data-type="pattern" data-value="Arabic" title="Arabic">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M30,50 Q40,30 50,50 T70,50 M35,65 Q45,50 55,65 T75,65" stroke="currentColor"
+                                fill="none" stroke-width="4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
