@@ -8,7 +8,7 @@ const config = {
 // Configuration names mapping
 const configNames = {
     'Red': 'Red',
-    'Red Matellic': 'Red Metallic',
+    'Red Metallic': 'Red Metallic',
     'Black': 'Black',
     'White': 'White',
     'Gold': 'Gold',
@@ -21,14 +21,19 @@ const configNames = {
 };
 
 // Configuration options for preloading
-const bases = ['Red', 'Red Matellic', 'Black', 'White', 'Gold', 'Silver'];
+const bases = ['Red', 'Red Metallic', 'Black', 'White', 'Gold', 'Silver'];
 const rims = ['Golden Ring', 'Silver Ring'];
 const patterns = ['Triangle', 'Star', 'Arabic'];
+
+// Cart state
+let cart = [];
 
 // Initialize the application
 function init() {
     setupEventListeners();
     updateProduct();
+    setupCartListeners();
+    setupThemeListener();
     // Start preloading after initial render to prioritize first paint
     setTimeout(preloadImages, 1000);
 }
@@ -64,6 +69,7 @@ function preloadImages() {
 
 // Setup event listeners for all control buttons
 function setupEventListeners() {
+    // ... (existing code for control buttons) ...
     const controlButtons = document.querySelectorAll('.control-btn');
 
     controlButtons.forEach(button => {
@@ -88,6 +94,165 @@ function setupEventListeners() {
         });
     });
 }
+
+// Cart & Theme Logic
+
+function setupCartListeners() {
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    const summaryBtn = document.getElementById('summaryBtn');
+    const closeCartBtn = document.getElementById('closeCartBtn');
+    const cartModal = document.getElementById('cartModal');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+
+
+
+    // New Summary Elements
+    const summaryModal = document.getElementById('summaryModal');
+    const closeSummaryBtn = document.getElementById('closeSummaryBtn');
+
+    addToCartBtn.addEventListener('click', () => {
+        addToCart();
+        openCart();
+    });
+
+    summaryBtn.addEventListener('click', () => {
+        // Changed: Opens Summary Modal instead of Cart
+        openSummary();
+    });
+
+    closeCartBtn.addEventListener('click', () => {
+        closeCart();
+    });
+
+    cartModal.addEventListener('click', (e) => {
+        if (e.target === cartModal) {
+            closeCart();
+        }
+    });
+
+    // Summary Modal Event Listeners
+    closeSummaryBtn.addEventListener('click', () => {
+        closeSummary();
+    });
+
+    summaryModal.addEventListener('click', (e) => {
+        if (e.target === summaryModal) {
+            closeSummary();
+        }
+    });
+
+    checkoutBtn.addEventListener('click', () => {
+        if (cart.length === 0) return;
+
+        // Trigger Confetti
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#fbbf24', '#d4a574', '#ffffff'] // Gold theme colors
+        });
+
+        alert('Thank you for your interest! Checkout functionality coming soon.');
+    });
+}
+
+
+function addToCart() {
+    const item = {
+        id: Date.now(),
+        config: { ...config },
+        names: {
+            base: configNames[config.base],
+            rim: configNames[config.rim],
+            pattern: configNames[config.pattern]
+        },
+        image: getCurrentImagePath()
+    };
+
+    cart.push(item);
+    renderCart();
+}
+
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
+    renderCart();
+}
+
+function renderCart() {
+    const container = document.getElementById('cartItemsContainer');
+
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="empty-cart-message">Your cart is empty</div>';
+        return;
+    }
+
+    container.innerHTML = cart.map(item => `
+        <div class="cart-item">
+            <img src="${item.image}" alt="Lamp Config" class="cart-item-image">
+            <div class="cart-item-details">
+                <div class="cart-item-title">Majesty Lamp - ${item.names.base}</div>
+                <div class="cart-item-specs">${item.names.rim} • ${item.names.pattern}</div>
+            </div>
+            <button class="remove-item-btn" onclick="removeFromCart(${item.id})">
+                Remove
+            </button>
+        </div>
+    `).join('');
+
+    // Re-attach event listeners for remove buttons (since inline onclick is not ideal but easiest here)
+    // Actually, let's delegate or leave as is if global scope issues arise. 
+    // To be safe in module/strict contexts, we should delegate or attach via JS.
+    // For simplicity here, I'll attach via JS after render.
+    const removeButtons = container.querySelectorAll('.remove-item-btn');
+    removeButtons.forEach((btn, index) => {
+        btn.onclick = () => removeFromCart(cart[index].id);
+    });
+}
+
+function openSummary() {
+    document.getElementById('summaryModal').classList.add('open');
+}
+
+function closeSummary() {
+    document.getElementById('summaryModal').classList.remove('open');
+}
+
+function openCart() {
+    document.getElementById('cartModal').classList.add('open');
+}
+
+function closeCart() {
+    document.getElementById('cartModal').classList.remove('open');
+}
+
+function getCurrentImagePath() {
+    if (config.rim === 'Golden Ring') {
+        return `renders/Golden Ring/${config.base} - Golden Ring/${config.pattern} - ${config.base}.webp`;
+    } else {
+        return `renders/Silver Ring/${config.base} - Silver Ring/Silver Ring - ${config.pattern} - ${config.base}.webp`;
+    }
+}
+
+function setupThemeListener() {
+    const themeBtn = document.getElementById('themeToggleBtn');
+    const sunIcon = themeBtn.querySelector('.sun-icon');
+    const moonIcon = themeBtn.querySelector('.moon-icon');
+
+    themeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('light-mode');
+        const isLight = document.body.classList.contains('light-mode');
+
+        if (isLight) {
+            sunIcon.style.display = 'none';
+            moonIcon.style.display = 'block';
+        } else {
+            sunIcon.style.display = 'block';
+            moonIcon.style.display = 'none';
+        }
+    });
+}
+
+// ... (Rest of existing functions) ...
 
 // Update product display based on current configuration
 function updateProduct() {
