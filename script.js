@@ -152,8 +152,26 @@ function setupCartListeners() {
             colors: ['#fbbf24', '#d4a574', '#ffffff'] // Gold theme colors
         });
 
-        alert('Thank you for your interest! Checkout functionality coming soon.');
+        // Show Success Modal
+        openSuccess();
+
+        // Clear Cart
+        cart = [];
+        renderCart();
     });
+
+    // Success Modal Close
+    document.getElementById('closeSuccessBtn').addEventListener('click', () => {
+        closeSuccess();
+    });
+}
+
+function openSuccess() {
+    document.getElementById('checkoutSuccessModal').classList.add('open');
+}
+
+function closeSuccess() {
+    document.getElementById('checkoutSuccessModal').classList.remove('open');
 }
 
 
