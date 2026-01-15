@@ -5,7 +5,7 @@
     --color-bg-secondary: #f8f9fa;
     --color-bg-sidebar: #fafbfc;
 
-    --color-text-primary: #1a1a1a;
+    --color-text-primary: #4d4d4d;
     --color-text-secondary: #6b7280;
     --color-text-muted: #9ca3af;
 
@@ -299,11 +299,11 @@ body {
 }
 
 .control-btn:hover svg {
-    color: var(--color-text-primary);
+    color: rgb(238, 186, 88);
 }
 
 .control-btn.active svg {
-    color: var(--color-text-primary);
+    color: rgb(238, 186, 88);
 }
 
 /* ===== Responsive Design ===== */

@@ -13,16 +13,18 @@ const configNames = {
     'White': 'White',
     'Gold': 'Gold',
     'Silver': 'Silver',
+    'Copper': 'Copper',
     'Golden Ring': 'Golden Ring',
     'Silver Ring': 'Silver Ring',
+    'Copper Ring': 'Copper Ring',
     'Triangle': 'Triangle',
     'Star': 'Star',
     'Arabic': 'Arabic'
 };
 
 // Configuration options for preloading
-const bases = ['Red', 'Red Metallic', 'Black', 'White', 'Gold', 'Silver'];
-const rims = ['Golden Ring', 'Silver Ring'];
+const bases = ['Red', 'Red Metallic', 'Black', 'White', 'Gold', 'Silver', 'Copper'];
+const rims = ['Golden Ring', 'Silver Ring', 'Copper Ring'];
 const patterns = ['Triangle', 'Star', 'Arabic'];
 
 // Cart state
@@ -49,9 +51,13 @@ function preloadImages() {
             patterns.forEach(pattern => {
                 let imagePath;
                 if (rim === 'Golden Ring') {
+                    if (base === 'Copper') return; // Copper only for Copper Ring
                     imagePath = `renders/Golden Ring/${base} - Golden Ring/${pattern} - ${base}.webp`;
-                } else {
+                } else if (rim === 'Silver Ring') {
+                    if (base === 'Copper') return; // Copper only for Copper Ring
                     imagePath = `renders/Silver Ring/${base} - Silver Ring/Silver Ring - ${pattern} - ${base}.webp`;
+                } else if (rim === 'Copper Ring') {
+                    imagePath = `renders/Copper Ring/${base} - Copper Ring/Copper Ring - ${pattern} - ${base}.webp`;
                 }
 
                 const img = new Image();
@@ -90,6 +96,24 @@ function setupEventListeners() {
 
             // Update configuration
             config[type] = value;
+
+            // Handle Copper Base Conditional Visibility
+            if (type === 'rim') {
+                const copperBaseBtn = document.getElementById('copper-base-btn');
+                if (value === 'Copper Ring') {
+                    copperBaseBtn.style.display = 'flex';
+                } else {
+                    copperBaseBtn.style.display = 'none';
+                    if (config.base === 'Copper') {
+                        config.base = 'Red';
+                        // Update UI Active State for Base
+                        const baseButtons = document.querySelectorAll('[data-type="base"]');
+                        baseButtons.forEach(btn => btn.classList.remove('active'));
+                        document.querySelector('[data-type="base"][data-value="Red"]').classList.add('active');
+                    }
+                }
+            }
+
             updateProduct();
         });
     });
@@ -246,8 +270,10 @@ function closeCart() {
 function getCurrentImagePath() {
     if (config.rim === 'Golden Ring') {
         return `renders/Golden Ring/${config.base} - Golden Ring/${config.pattern} - ${config.base}.webp`;
-    } else {
+    } else if (config.rim === 'Silver Ring') {
         return `renders/Silver Ring/${config.base} - Silver Ring/Silver Ring - ${config.pattern} - ${config.base}.webp`;
+    } else if (config.rim === 'Copper Ring') {
+        return `renders/Copper Ring/${config.base} - Copper Ring/Copper Ring - ${config.pattern} - ${config.base}.webp`;
     }
 }
 
@@ -291,9 +317,12 @@ function updateProductImage() {
     if (config.rim === 'Golden Ring') {
         // Golden Ring path: renders/Golden Ring/[Base] - Golden Ring/[Pattern] - [Base].webp
         imagePath = `renders/Golden Ring/${config.base} - Golden Ring/${config.pattern} - ${config.base}.webp`;
-    } else {
+    } else if (config.rim === 'Silver Ring') {
         // Silver Ring path: renders/Silver Ring/[Base] - Silver Ring/Silver Ring - [Pattern] - [Base].webp
         imagePath = `renders/Silver Ring/${config.base} - Silver Ring/Silver Ring - ${config.pattern} - ${config.base}.webp`;
+    } else if (config.rim === 'Copper Ring') {
+        // Copper Ring path: renders/Copper Ring/[Base] - Copper Ring/Copper Ring - [Pattern] - [Base].webp
+        imagePath = `renders/Copper Ring/${config.base} - Copper Ring/Copper Ring - ${config.pattern} - ${config.base}.webp`;
     }
 
     console.log('Loading image:', imagePath);
