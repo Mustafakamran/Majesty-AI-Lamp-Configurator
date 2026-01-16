@@ -84,6 +84,25 @@
         <div class="product-container">
             <img id="productImage" src="renders/Golden Ring/Red - Golden Ring/Triangle - Red.webp" alt="Majesty Lamp"
                 class="product-image">
+            <div id="threeCanvasContainer" class="three-container"></div>
+
+            <button id="view3DToggle" class="view-3d-btn" title="Toggle 3D View">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+                <span>3D VIEW</span>
+            </button>
+
+            <div id="cameraControls" class="camera-controls">
+                <button class="camera-btn active" data-angle="front">FRONT</button>
+                <button class="camera-btn" data-angle="left">LEFT</button>
+                <button class="camera-btn" data-angle="right">RIGHT</button>
+            </div>
         </div>
 
         <!-- Bottom Bar -->
@@ -298,6 +317,13 @@
         </div>
     </aside>
 
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+    <script>window.fflate = fflate;</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/EXRLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="script.js"></script>
 </body>

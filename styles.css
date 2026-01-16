@@ -95,6 +95,121 @@ body {
     object-fit: cover;
     position: relative;
     z-index: 1;
+    transition: opacity 0.5s ease;
+}
+
+.product-image.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.three-container {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.three-container.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.view-3d-btn {
+    position: absolute;
+    bottom: var(--spacing-xl);
+    right: var(--spacing-xl);
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 0.75rem 1.25rem;
+    background: rgba(26, 26, 26, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(238, 186, 88, 0.3);
+    border-radius: var(--radius-full);
+    color: #ffffff;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.view-3d-btn:hover {
+    background: rgba(238, 186, 88, 0.9);
+    color: #000000;
+    border-color: rgb(238, 186, 88);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(238, 186, 88, 0.4);
+}
+
+.view-3d-btn svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.3s ease;
+}
+
+.view-3d-btn:hover svg {
+    transform: rotate(180deg);
+}
+
+.view-3d-btn.active {
+    background: rgb(238, 186, 88);
+    color: #000000;
+    border-color: rgb(238, 186, 88);
+}
+
+.camera-controls {
+    position: absolute;
+    top: var(--spacing-xl);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25;
+    display: flex;
+    gap: var(--spacing-sm);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.camera-controls.active {
+    opacity: 1;
+    pointer-events: all;
+    top: var(--spacing-lg);
+}
+
+.camera-btn {
+    padding: 0.5rem 1.25rem;
+    background: rgba(26, 26, 26, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    color: rgba(255, 255, 255, 0.6);
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.camera-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.camera-btn.active {
+    background: rgba(238, 186, 88, 0.2);
+    color: rgb(238, 186, 88);
+    border-color: rgb(238, 186, 88);
 }
 
 /* ===== Bottom Bar ===== */
