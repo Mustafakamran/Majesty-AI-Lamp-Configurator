@@ -117,53 +117,11 @@ body {
     pointer-events: all;
 }
 
-.view-3d-btn {
-    position: absolute;
-    bottom: var(--spacing-xl);
-    right: var(--spacing-xl);
-    z-index: 25;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: 0.75rem 1.25rem;
-    background: rgba(26, 26, 26, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(238, 186, 88, 0.3);
-    border-radius: var(--radius-full);
-    color: #ffffff;
-    font-family: var(--font-body);
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+/* .view-3d-btn removed - now integrated into bottom bar as .btn-secondary */
+.view-3d-btn-legacy {
+    display: none;
 }
 
-.view-3d-btn:hover {
-    background: rgba(238, 186, 88, 0.9);
-    color: #000000;
-    border-color: rgb(238, 186, 88);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(238, 186, 88, 0.4);
-}
-
-.view-3d-btn svg {
-    width: 18px;
-    height: 18px;
-    transition: transform 0.3s ease;
-}
-
-.view-3d-btn:hover svg {
-    transform: rotate(180deg);
-}
-
-.view-3d-btn.active {
-    background: rgb(238, 186, 88);
-    color: #000000;
-    border-color: rgb(238, 186, 88);
-}
 
 .camera-controls {
     position: absolute;
@@ -442,7 +400,65 @@ body {
     }
 }
 
+/* Visibility Utilities */
+.mobile-only {
+    display: none;
+}
+
+.desktop-only {
+    display: flex;
+}
+
+.mobile-3d-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    /* display: flex; - Removed to prevent overriding .mobile-only */
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    transition: all 0.3s ease;
+}
+
+.mobile-3d-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-3d-btn.active {
+    background: rgba(238, 186, 88, 0.2);
+    border-color: rgb(238, 186, 88);
+    color: rgb(238, 186, 88);
+}
+
+/* Light mode handling for new btn */
+body.light-mode .mobile-3d-btn {
+    border-color: #e5e7eb;
+    color: #1a1a1a;
+}
+
+body.light-mode .mobile-3d-btn:hover {
+    background: #f3f4f6;
+}
+
+body.light-mode .mobile-3d-btn.active {
+    background: rgba(0, 0, 0, 0.1);
+    border-color: black;
+}
+
 @media (max-width: 768px) {
+    .mobile-only {
+        display: flex;
+    }
+
+    .desktop-only {
+        display: none;
+    }
+
     body {
         flex-direction: column;
         height: auto;
@@ -566,8 +582,13 @@ body {
 
 .sidebar-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    /* justify-content: space-between; - Removed to allow flex-grow on title to control spacing */
+}
+
+.sidebar-title {
+    flex: 1;
+    /* Pushes buttons to the right */
 }
 
 /* ===== Cart Modal ===== */
@@ -954,8 +975,9 @@ body.light-mode .empty-cart-message {
 /* Make Logo Responsive */
 @media (max-width: 768px) {
     .brand-logo {
-        width: 120px;
-        top: 1.5rem;
+        width: 50px;
+        position: fixed;
+        bottom: 1.5rem;
         left: 1.5rem;
     }
 
@@ -971,4 +993,117 @@ body.light-mode .empty-cart-message {
     .summary-container {
         padding: var(--spacing-xl);
     }
+}
+
+/* ===== Preloader ===== */
+#preloader {
+    position: fixed;
+    inset: 0;
+    background: #000000;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+}
+
+#preloader.fade-out {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.loader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 300px;
+    max-width: 80%;
+}
+
+.loader-logo {
+    width: 150px;
+    margin-bottom: var(--spacing-2xl);
+    opacity: 0;
+    animation: fadeIn 1s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: var(--spacing-sm);
+}
+
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background: rgb(238, 186, 88);
+    box-shadow: 0 0 10px rgba(238, 186, 88, 0.5);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+}
+
+.progress-text {
+    color: rgb(238, 186, 88);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+}
+
+/* ===== Cursor Tooltip ===== */
+#cursor-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: rgb(238, 186, 88);
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    z-index: 10000;
+    opacity: 0;
+    /* Remove fixed offset from CSS, JS will handle positioning + rotation */
+    transform-origin: center center;
+    transform: translate(0, 0) rotate(0deg) scale(0.95);
+    transition: opacity 0.2s ease, transform 0.05s linear;
+    /* Fast transform for following */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+    will-change: transform, opacity;
+}
+
+#cursor-tooltip.visible {
+    opacity: 1;
+}
+
+/* Light mode support */
+body.light-mode #cursor-tooltip {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1a1a1a;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }

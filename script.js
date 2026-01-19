@@ -36,24 +36,58 @@ let is3DMode = false;
 
 // Three.js Viewer Class
 class ThreeViewer {
-    constructor() {
+    constructor(options = {}) {
+        this.options = options; // Store options (callbacks)
         this.container = document.getElementById('threeCanvasContainer');
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(10, this.container.clientWidth / this.container.clientHeight, 0.1, 1000);
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.model = null;
         this.loader = new THREE.GLTFLoader();
-        this.debugSettings = {
-            exposure: 1,
-            ambientIntensity: 0,
-            mainLightIntensity: 2,
-            rimLightIntensity: 2,
-            metalness: 1,
-            roughness: 0.1,
-            envMapIntensity: 0.2,
-            baseMetalness: 1,
-            baseRoughness: 0.15
+        this.materialSettings = {
+            global: {
+                exposure: 1,
+                mainLightIntensity: 0.1,
+                rimLightIntensity: 2,
+                ambientIntensity: 0,
+                bloomStrength: 0.5,
+                bloomRadius: 1,
+                bloomStrength: 0.5,
+                bloomRadius: 1,
+                bloomThreshold: 0.5,
+                logoLightIntensity: 5,
+                logoLightX: 0,
+                logoLightY: 1.6, // Approximate height of the top logo
+                logoLightZ: 0.7, // Close to the front
+                logoLightDistance: 2,
+                logoLightDecay: 1,
+                logoLightAngle: 0.6,
+                logoLightPenumbra: 0.5,
+                logoLightTargetX: 0,
+                logoLightTargetY: 0,
+                logoLightTargetZ: 0,
+            },
+            bases: {
+                "Red": { "metalness": 0, "roughness": 0.1, "envMapIntensity": 0.5, "color": 5114121 },
+                "Red Metallic": { "metalness": 1, "roughness": 0.3, "envMapIntensity": 1, "color": 5114121 },
+                "Black": { "metalness": 0, "roughness": 0.1, "envMapIntensity": 0.2, "color": 0 },
+                "White": { "metalness": 0, "roughness": 0.1, "envMapIntensity": 1, "color": 11250603 },
+                "Gold": { "metalness": 1, "roughness": 0.3, "envMapIntensity": 0.5, "color": 16757575 },
+                "Silver": { "metalness": 1, "roughness": 0.2, "envMapIntensity": 0.8, "color": 16777215 },
+                "Copper": { "metalness": 1, "roughness": 0.25, "envMapIntensity": 0.8, "color": 16759700 }
+            },
+            rings: {
+                "Golden Ring": { "metalness": 1, "roughness": 0.25, "envMapIntensity": 0.8, "color": 16757575 },
+                "Silver Ring": { "metalness": 1, "roughness": 0.2, "envMapIntensity": 0.8, "color": 16777215 },
+                "Copper Ring": { "metalness": 1, "roughness": 0.2, "envMapIntensity": 1, "color": 16759700 }
+            },
+            patterns: {
+                "Triangle": { "emissive": 16753920, "emissiveIntensity": 10 },
+                "Star": { "emissive": 16753920, "emissiveIntensity": 10 },
+                "Arabic": { "emissive": 16753920, "emissiveIntensity": 10 }
+            }
         };
+
         this.cameraAngles = {
             front: { pos: { x: 0, y: 0, z: 3 }, lookAt: { x: 0, y: 0, z: 0 } },
             left: { pos: { x: -1.8, y: 0.5, z: 3 }, lookAt: { x: 0, y: 0, z: 0 } },
@@ -78,16 +112,112 @@ class ThreeViewer {
         this.setupEnvironment();
 
         // Lighting
-        this.ambientLight = new THREE.AmbientLight(0xffffff, this.debugSettings.ambientIntensity);
+        this.ambientLight = new THREE.AmbientLight(0xffffff, this.materialSettings.global.ambientIntensity);
         this.scene.add(this.ambientLight);
 
-        this.mainLight = new THREE.DirectionalLight(0xffffff, this.debugSettings.mainLightIntensity);
+        this.mainLight = new THREE.DirectionalLight(0xffffff, this.materialSettings.global.mainLightIntensity);
         this.mainLight.position.set(5, 5, 5);
         this.scene.add(this.mainLight);
 
-        this.rimLight = new THREE.PointLight(0xffffff, this.debugSettings.rimLightIntensity);
+        this.rimLight = new THREE.PointLight(0xffffff, this.materialSettings.global.rimLightIntensity);
+        this.rimLight.position.set(-5, 3, -5);
         this.rimLight.position.set(-5, 3, -5);
         this.scene.add(this.rimLight);
+
+        // Targeted Logo Light (SpotLight)
+        // Layer 1 is reserved for Logo isolation
+        this.camera.layers.enable(1); // Camera sees both Layer 0 (default) and Layer 1
+
+        this.logoLight = new THREE.SpotLight(0xffffff, this.materialSettings.global.logoLightIntensity);
+        this.logoLight.distance = this.materialSettings.global.logoLightDistance;
+        this.logoLight.decay = this.materialSettings.global.logoLightDecay;
+        this.logoLight.angle = this.materialSettings.global.logoLightAngle;
+        this.logoLight.penumbra = this.materialSettings.global.logoLightPenumbra;
+
+        this.logoLight.position.set(
+            this.materialSettings.global.logoLightX,
+            this.materialSettings.global.logoLightY,
+            this.materialSettings.global.logoLightZ
+        );
+
+        // Setup Target
+        this.logoLight.target.position.set(
+            this.materialSettings.global.logoLightTargetX,
+            this.materialSettings.global.logoLightTargetY,
+            this.materialSettings.global.logoLightTargetZ
+        );
+
+        this.logoLight.layers.set(1); // Only affect objects on Layer 1
+        this.logoLight.target.layers.set(1); // Target also on Layer 1 (though not strictly rendered)
+
+        this.scene.add(this.logoLight);
+        this.scene.add(this.logoLight.target);
+
+        // Post-Processing (Selective Bloom)
+        this.renderScene = new THREE.RenderPass(this.scene, this.camera);
+
+        // 1. Bloom Composer
+        this.bloomComposer = new THREE.EffectComposer(this.renderer);
+        this.bloomComposer.renderToScreen = false;
+        this.bloomComposer.addPass(this.renderScene);
+
+        this.bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(this.container.clientWidth, this.container.clientHeight),
+            this.materialSettings.global.bloomStrength,
+            this.materialSettings.global.bloomRadius,
+            this.materialSettings.global.bloomThreshold
+        );
+        this.bloomComposer.addPass(this.bloomPass);
+
+        // 2. Final Composer
+        this.finalComposer = new THREE.EffectComposer(this.renderer);
+        this.finalComposer.addPass(this.renderScene);
+
+        // Mix Pass (Base + Bloom)
+        const vertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+            }
+        `;
+        const fragmentShader = `
+            uniform sampler2D baseTexture;
+            uniform sampler2D bloomTexture;
+            varying vec2 vUv;
+            void main() {
+                gl_FragColor = ( texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ) );
+            }
+        `;
+
+        this.mixPass = new THREE.ShaderPass(
+            new THREE.ShaderMaterial({
+                uniforms: {
+                    baseTexture: { value: null },
+                    bloomTexture: { value: this.bloomComposer.renderTarget2.texture }
+                },
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                defines: {}
+            }), "baseTexture"
+        );
+        this.mixPass.needsSwap = true;
+        this.finalComposer.addPass(this.mixPass);
+
+        // Anti-Aliasing (FXAA) on the final result
+        const pixelRatio = this.renderer.getPixelRatio();
+        this.fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
+        this.fxaaPass.material.uniforms['resolution'].value.x = 1 / (this.container.clientWidth * pixelRatio);
+        this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (this.container.clientHeight * pixelRatio);
+        this.finalComposer.addPass(this.fxaaPass);
+
+        // Handle High DPI
+        this.bloomComposer.setSize(this.container.clientWidth * pixelRatio, this.container.clientHeight * pixelRatio);
+        this.finalComposer.setSize(this.container.clientWidth * pixelRatio, this.container.clientHeight * pixelRatio);
+
+        // Materials for selective bloom
+        this.darkMaterial = new THREE.MeshBasicMaterial({ color: 'black' });
+        this.materials = {};
 
         // Load Model
         this.loadModel();
@@ -103,8 +233,8 @@ class ThreeViewer {
         const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
         pmremGenerator.compileEquirectangularShader();
 
-        // Using the user's local high-fidelity EXR environment map
-        new THREE.EXRLoader().load('env_texture/env.exr', (texture) => {
+        // Using the user's local high-fidelity HDR environment map
+        new THREE.RGBELoader().load('env_texture/studio_small_08_1k.hdr', (texture) => {
             const envMap = pmremGenerator.fromEquirectangular(texture).texture;
             this.scene.environment = envMap;
             // this.scene.background = envMap; // Uncomment if background needed
@@ -113,10 +243,10 @@ class ThreeViewer {
             pmremGenerator.dispose();
 
             if (this.model) this.updateMaterials();
-            console.log('Environment Map (EXR) loaded successfully');
+            console.log('Environment Map (HDR) loaded successfully');
         }, undefined, (error) => {
-            console.error('Error loading EXR environment map:', error);
-            // Fallback to simple studio JPG if EXR fails
+            console.error('Error loading HDR environment map:', error);
+            // Fallback to simple studio JPG if HDR fails
             new THREE.TextureLoader().load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/22_3_13_4_50_48_680_1656.jpg', (texture) => {
                 const envMap = pmremGenerator.fromEquirectangular(texture).texture;
                 this.scene.environment = envMap;
@@ -125,7 +255,7 @@ class ThreeViewer {
         });
 
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = this.debugSettings.exposure;
+        this.renderer.toneMappingExposure = this.materialSettings.global.exposure;
     }
 
 
@@ -152,6 +282,13 @@ class ThreeViewer {
     }
 
     loadModel() {
+        const onProgress = (xhr) => {
+            if (xhr.lengthComputable) {
+                const percentComplete = (xhr.loaded / xhr.total) * 100;
+                if (this.options.onProgress) this.options.onProgress(percentComplete);
+            }
+        };
+
         this.loader.load('https://pub-0fa84320243249fca31ce0de4238c3e8.r2.dev/MajestyGLB.glb', (gltf) => {
             this.model = gltf.scene;
             this.scene.add(this.model);
@@ -182,8 +319,14 @@ class ThreeViewer {
             this.updateMaterials();
             this.setCameraAngle('front');
             console.log('3D Model loaded successfully');
-        }, undefined, (error) => {
+
+            // Trigger onLoad callback
+            if (this.options.onLoad) this.options.onLoad();
+
+        }, onProgress, (error) => {
             console.error('Error loading 3D model:', error);
+            // Even on error, we should probably hide loader to allow site usage
+            if (this.options.onLoad) this.options.onLoad();
         });
     }
 
@@ -215,13 +358,6 @@ class ThreeViewer {
             'Copper Ring': 'Screen Copper'
         };
 
-        const patternMaterialMap = {
-            'Triangle': 'Triangle',
-            'Star': 'Star',
-            'Arabic': 'Arabic'
-        };
-
-        // Pattern meshes (show only the selected one) - mesh names have _Pattern suffix
         const patternMeshMap = {
             'Triangle': 'Triangle_Pattern',
             'Star': 'Star_Pattern',
@@ -240,10 +376,25 @@ class ThreeViewer {
                     return;
                 }
 
-                // Pattern meshes - show only the selected one
+                // Pattern meshes - show only the selected one and apply emissive
                 if (patternMeshNames.includes(node.name)) {
                     const selectedPatternMesh = patternMeshMap[config.pattern];
                     node.visible = (node.name === selectedPatternMesh);
+
+                    if (node.visible) {
+                        const settings = this.materialSettings.patterns[config.pattern];
+                        // Ensure material is Standard to support emissive if not already
+                        if (!(node.material instanceof THREE.MeshStandardMaterial)) {
+                            node.material = new THREE.MeshStandardMaterial({
+                                map: node.material.map,
+                                transparent: true,
+                                opacity: 1
+                            });
+                        }
+                        node.material.emissive.setHex(settings.emissive);
+                        node.material.emissiveIntensity = settings.emissiveIntensity;
+                        node.material.color.setHex(0xffffff); // Ensure base color doesn't interfere too much
+                    }
                     return;
                 }
 
@@ -255,62 +406,61 @@ class ThreeViewer {
 
                 // 1. Base Mesh
                 if (node.name === 'Base') {
-                    this.applyMaterialByName(node, config.base);
+                    this.applyMaterialByName(node, config.base, 'base');
                 }
 
                 // 2. Rim/Ring Finishes
                 if (['Rim', 'Ring', 'BaseRim', 'BaseRim_1', 'Logo'].includes(node.name)) {
-                    const matName = rimMaterialMap[config.rim];
-                    this.applyMaterialByName(node, matName);
+                    // Decide which ring finish to use
+                    this.applyMaterialByName(node, config.rim, 'rim');
                 }
 
                 // 3. Screen (main screen mesh)
                 if (node.name === 'Screen_Main_(Gold)') {
-                    const matName = screenMaterialMap[config.rim];
-                    this.applyMaterialByName(node, matName);
+                    // Use rim finish logic for screen metal parts usually, or specific screen settings if we had them.
+                    // For now, let's map it to the Rim material settings as per previous logic
+                    // But wait, the previous logic used specific screen materials.
+                    // Let's stick to the mapped material name but apply the Ring settings to it?
+                    // Or just use the Ring settings directly since it matches the finish.
+                    this.applyMaterialByName(node, config.rim, 'rim');
                 }
             }
         });
     }
 
-    applyMaterialByName(mesh, matName) {
-        if (this.allMaterials && this.allMaterials[matName]) {
-            const material = this.allMaterials[matName];
-
-            // Apply refined properties for metallic materials
-            if (matName.includes('Cap') || matName.includes('Gold') || matName.includes('Silver') || matName.includes('Cooper')) {
-                material.metalness = this.debugSettings.metalness;
-                material.roughness = this.debugSettings.roughness;
-                material.envMapIntensity = this.debugSettings.envMapIntensity;
-            } else if (matName === 'Base' || config.base.includes('Metallic')) {
-                material.metalness = this.debugSettings.baseMetalness;
-                material.roughness = this.debugSettings.baseRoughness;
-                material.envMapIntensity = 1.0;
-            }
-
-            mesh.material = material;
-        } else {
-            // Fallback logic
-            if (mesh.name === 'Base') {
-                this.applyBaseColorFallback(mesh);
-            } else if (['Rim', 'Ring', 'BaseRim', 'BaseRim_1', 'Logo', 'Screen_Main_(Gold)'].includes(mesh.name)) {
-                this.applyMetalMaterialFallback(mesh);
-            }
+    applyMaterialByName(mesh, configValue, type) {
+        let settings;
+        if (type === 'base') {
+            settings = this.materialSettings.bases[configValue];
+        } else if (type === 'rim') {
+            settings = this.materialSettings.rings[configValue];
         }
+
+        if (!settings) return;
+
+        // Apply to existing material if possible, or create new if needed fallback
+        if (!mesh.material) {
+            mesh.material = new THREE.MeshStandardMaterial();
+        }
+
+        mesh.material.metalness = settings.metalness;
+        mesh.material.roughness = settings.roughness;
+        mesh.material.envMapIntensity = settings.envMapIntensity;
+        mesh.material.color.setHex(settings.color);
+
+        // Special Handling for Logo: Enable Layer 1 so it receives the Targeted Logo Light
+        if (mesh.name === 'Logo') {
+            mesh.layers.enable(1); // It is now on Layer 0 AND Layer 1
+        } else {
+            // Ensure other meshes are NOT on Layer 1 (just in case they were reused)
+            mesh.layers.disable(1);
+        }
+
+        mesh.material.needsUpdate = true;
     }
 
     applyMetalMaterialFallback(mesh) {
-        let color;
-        if (config.rim === 'Golden Ring') color = 0xd4a574;
-        else if (config.rim === 'Silver Ring') color = 0xcccccc;
-        else if (config.rim === 'Copper Ring') color = 0xb87333;
-
-        mesh.material = new THREE.MeshStandardMaterial({
-            color: color,
-            metalness: this.debugSettings.metalness,
-            roughness: this.debugSettings.roughness,
-            envMapIntensity: this.debugSettings.envMapIntensity
-        });
+        // Deprecated by granular system
     }
 
     applyBaseColorFallback(mesh) {
@@ -337,14 +487,81 @@ class ThreeViewer {
         this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+        if (this.bloomComposer) {
+            const pixelRatio = this.renderer.getPixelRatio();
+            this.bloomComposer.setSize(this.container.clientWidth * pixelRatio, this.container.clientHeight * pixelRatio);
+            this.finalComposer.setSize(this.container.clientWidth * pixelRatio, this.container.clientHeight * pixelRatio);
+
+            if (this.fxaaPass) {
+                this.fxaaPass.material.uniforms['resolution'].value.x = 1 / (this.container.clientWidth * pixelRatio);
+                this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (this.container.clientHeight * pixelRatio);
+            }
+        }
+    }
+
+    darkenNonBloomed(obj) {
+        if (obj.isMesh && this.bloomLayer.test(obj.layers) === false) {
+            this.materials[obj.uuid] = obj.material;
+            obj.material = this.darkMaterial;
+        }
+    }
+
+    restoreMaterial(obj) {
+        if (this.materials[obj.uuid]) {
+            obj.material = this.materials[obj.uuid];
+            delete this.materials[obj.uuid];
+        }
     }
 
     animate() {
         requestAnimationFrame(() => this.animate());
-        this.renderer.render(this.scene, this.camera);
+
+        if (this.bloomComposer && this.finalComposer) {
+            // 1. Darken non-bloomed objects
+            // We need to identify bloomed objects. 
+            // Since we haven't strictly used layers yet (simpler to just check names/properties),
+            // let's use the visible pattern check here.
+
+            const patternMeshNames = ['Triangle_Pattern', 'Star_Pattern', 'Arabic_Pattern'];
+
+            this.scene.traverse((obj) => {
+                if (obj.isMesh) {
+                    // If it's a visible pattern, it should bloom.
+                    // Everything else should be dark.
+                    const isPattern = patternMeshNames.includes(obj.name);
+                    // Note: We only bloom the visible pattern.
+                    // The currently visible pattern is already determined in updateMaterials logic.
+                    // But we should check obj.visible && isPattern
+
+                    if (isPattern && obj.visible) {
+                        // Do nothing, let it bloom
+                    } else {
+                        this.materials[obj.uuid] = obj.material;
+                        obj.material = this.darkMaterial;
+                    }
+                }
+            });
+
+            // 2. Render bloom
+            this.bloomComposer.render();
+
+            // 3. Restore materials
+            this.scene.traverse((obj) => {
+                if (this.materials[obj.uuid]) {
+                    obj.material = this.materials[obj.uuid];
+                    delete this.materials[obj.uuid];
+                }
+            });
+
+            // 4. Render final scene
+            this.finalComposer.render();
+        } else {
+            this.renderer.render(this.scene, this.camera);
+        }
     }
 }
 
+// Initialize the application
 // Initialize the application
 function init() {
     setupEventListeners();
@@ -352,44 +569,136 @@ function init() {
     setupCartListeners();
     setupThemeListener();
     setup3DViewToggle();
-    // Start preloading after initial render to prioritize first paint
+
+    // Preloader & 3D Viewer Initialization
+    const loaderBar = document.getElementById('loaderProgressBar');
+    const loaderText = document.getElementById('loaderProgressText');
+    const preloader = document.getElementById('preloader');
+
+    // Smooth Loading Logic
+    let targetProgress = 0;
+    let currentProgress = 0;
+    const loadSpeed = 0.8; // Percentage increment per frame (approx 2s for 0-100%)
+
+    const updateLoader = () => {
+        if (currentProgress < targetProgress) {
+            currentProgress += loadSpeed;
+            if (currentProgress > targetProgress) currentProgress = targetProgress;
+        }
+
+        // Update UI
+        if (loaderBar) loaderBar.style.width = currentProgress + '%';
+        if (loaderText) loaderText.textContent = Math.floor(currentProgress) + '%';
+
+        if (currentProgress >= 100) {
+            // Finished
+            setTimeout(() => {
+                if (preloader) preloader.classList.add('fade-out');
+            }, 500);
+        } else {
+            requestAnimationFrame(updateLoader);
+        }
+    };
+
+    // Start the animation loop
+    requestAnimationFrame(updateLoader);
+
+    // Initialize 3D Viewer immediately with callbacks
+    threeViewer = new ThreeViewer({
+        onProgress: (percent) => {
+            // Update the target, but clamp to 99 until finish allows 100
+            // (Actually GLTF loader tracking is good, we can trust it)
+            targetProgress = Math.max(0, Math.min(100, percent));
+        },
+        onLoad: () => {
+            // Ensure we reach 100% eventually
+            targetProgress = 100;
+        }
+    });
+
+    // Setup camera listeners now that viewer is created
+    setupCameraAngleListeners();
+
+    // Mouse Tooltip Logic
+    const tooltip = document.getElementById('cursor-tooltip');
+
+    document.addEventListener('mousemove', (e) => {
+        if (!tooltip) return;
+        // Immediate position update
+        tooltip.style.left = e.clientX + 'px';
+        tooltip.style.top = e.clientY + 'px';
+    });
+
+    const setupTooltipTriggers = () => {
+        const interactiveElements = document.querySelectorAll('[title], [data-tooltip]');
+
+        interactiveElements.forEach(el => {
+            const content = el.getAttribute('title') || el.getAttribute('data-tooltip');
+            if (!content) return;
+
+            // Remove native title to prevent double tooltip
+            if (el.hasAttribute('title')) {
+                el.setAttribute('data-tooltip', content);
+                el.removeAttribute('title');
+            }
+
+            el.addEventListener('mouseenter', () => {
+                tooltip.textContent = content;
+                tooltip.classList.add('visible');
+            });
+
+            el.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('visible');
+            });
+        });
+    };
+
+    setupTooltipTriggers();
+
+    // Start preloading images after a short delay
     setTimeout(preloadImages, 1000);
 }
 
+
+
 function setup3DViewToggle() {
-    const toggleBtn = document.getElementById('view3DToggle');
+    const toggleBtnDesktop = document.getElementById('view3DToggleDesktop');
+    const toggleBtnMobile = document.getElementById('view3DToggleMobile');
     const image = document.getElementById('productImage');
     const container = document.getElementById('threeCanvasContainer');
     const cameraControls = document.getElementById('cameraControls');
 
-    toggleBtn.addEventListener('click', () => {
+    const toggle3D = () => {
         is3DMode = !is3DMode;
 
-        if (is3DMode) {
-            // Switch to 3D
-            if (!threeViewer) {
-                threeViewer = new ThreeViewer();
-                setupCameraAngleListeners();
-            } else {
-                threeViewer.updateMaterials();
+        // Toggle Buttons State
+        [toggleBtnDesktop, toggleBtnMobile].forEach(btn => {
+            if (btn) {
+                if (is3DMode) {
+                    btn.classList.add('active');
+                    if (btn.querySelector('span')) btn.querySelector('span').textContent = '2D VIEW';
+                } else {
+                    btn.classList.remove('active');
+                    if (btn.querySelector('span')) btn.querySelector('span').textContent = '3D VIEW';
+                }
             }
+        });
 
-            container.classList.add('active');
+
+        if (is3DMode) {
             image.classList.add('hidden');
+            container.classList.add('active');
             cameraControls.classList.add('active');
-            toggleBtn.classList.add('active');
-            toggleBtn.querySelector('span').textContent = '2D VIEW';
+            // threeViewer is already initialized in init()
         } else {
-            // Switch to 2D
-            container.classList.remove('active');
             image.classList.remove('hidden');
+            container.classList.remove('active');
             cameraControls.classList.remove('active');
-            toggleBtn.classList.remove('active');
-            toggleBtn.querySelector('span').textContent = '3D VIEW';
-
-            updateProduct();
         }
-    });
+    };
+
+    if (toggleBtnDesktop) toggleBtnDesktop.addEventListener('click', toggle3D);
+    if (toggleBtnMobile) toggleBtnMobile.addEventListener('click', toggle3D);
 }
 
 function setupCameraAngleListeners() {
