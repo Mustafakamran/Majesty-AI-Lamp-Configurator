@@ -482,6 +482,22 @@ body.light-mode .mobile-3d-btn.active {
         background: #010101;
     }
 
+    /* Hide Tooltip on Mobile */
+    #cursor-tooltip {
+        display: none !important;
+    }
+
+    .brand-logo {
+        position: absolute;
+        /* Changed from fixed to scroll with content */
+        bottom: 30px;
+        /* Positioned at bottom left */
+        left: 1.5rem;
+        top: auto;
+        width: 60px;
+        z-index: 10;
+    }
+
     .product-container {
         height: 100%;
     }
@@ -1106,4 +1122,84 @@ body.light-mode #cursor-tooltip {
     border-color: rgba(0, 0, 0, 0.1);
     color: #1a1a1a;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Brand Logo ===== */
+.brand-logo {
+    position: fixed;
+    top: 1.5rem;
+    left: 1.5rem;
+    width: 120px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.brand-logo svg {
+    width: 100%;
+    height: auto;
+}
+
+.brand-logo svg path,
+.brand-logo svg rect {
+    fill: rgb(238, 186, 88) !important;
+}
+
+/* ===== Mobile Label Styles ===== */
+.control-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.mobile-label {
+    display: none;
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: center;
+    width: 100%;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+@media (max-width: 768px) {
+    .control-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
+
+    .control-btn {
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        margin: 0;
+        border-radius: 50% !important;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-label {
+        display: block;
+        width: 50px;
+        white-space: normal;
+        line-height: 1.1;
+        word-wrap: break-word;
+    }
+
+    /* Logo Fix for Mobile: Absolute to scroll with container, positioned bottom-left */
+    .brand-logo {
+        position: absolute !important;
+        top: auto !important;
+        bottom: 25px !important;
+        left: 20px !important;
+        width: 50px !important;
+        z-index: 50 !important;
+        transform: none !important;
+    }
 }

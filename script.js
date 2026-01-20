@@ -85,6 +85,14 @@ class ThreeViewer {
                 "Triangle": { "emissive": 16753920, "emissiveIntensity": 10 },
                 "Star": { "emissive": 16753920, "emissiveIntensity": 10 },
                 "Arabic": { "emissive": 16753920, "emissiveIntensity": 10 }
+            },
+            floor: {
+                color: 0x1a1a1a,
+                metalness: 0.6,
+                roughness: 0.2,
+                envMapIntensity: 0.8,
+                positionY: -0.4, // Initial guess, will be updated by alignment
+                scale: 1.5
             }
         };
 
@@ -227,6 +235,9 @@ class ThreeViewer {
 
         // Animation Loop
         this.animate();
+
+        // Setup Debug GUI
+        // this.setupDebugGUI();
     }
 
     setupEnvironment() {
@@ -315,12 +326,32 @@ class ThreeViewer {
             this.model.position.y += (this.model.position.y - center.y);
             this.model.position.z += (this.model.position.z - center.z);
 
-            // Initial sync
             this.updateMaterials();
             this.setCameraAngle('front');
-            console.log('3D Model loaded successfully');
+            console.log('Main Lamp loaded successfully');
 
-            // Trigger onLoad callback
+            // Dynamic Floor Alignment
+            const finalBox = new THREE.Box3().setFromObject(this.model);
+            const floorY = finalBox.min.y;
+            this.materialSettings.floor.positionY = floorY;
+
+            // Use a Circle Reflector for the floor to enable real-time reflections
+            const floorSettings = this.materialSettings.floor;
+            const reflectorGeometry = new THREE.CircleGeometry(5, 64);
+
+            this.floor = new THREE.Reflector(reflectorGeometry, {
+                clipBias: 0.003,
+                textureWidth: window.innerWidth * window.devicePixelRatio,
+                textureHeight: window.innerHeight * window.devicePixelRatio,
+                color: floorSettings.color,
+                recursion: 1
+            });
+
+            this.floor.rotateX(-Math.PI / 2);
+            this.floor.position.y = floorSettings.positionY;
+            this.scene.add(this.floor);
+
+            console.log('Real-time Reflector Floor added at:', floorY);
             if (this.options.onLoad) this.options.onLoad();
 
         }, onProgress, (error) => {
@@ -559,6 +590,79 @@ class ThreeViewer {
             this.renderer.render(this.scene, this.camera);
         }
     }
+
+    updateFloorMaterial() {
+        if (!this.floor) return;
+        const settings = this.materialSettings.floor;
+        this.floor.position.y = settings.positionY;
+        this.floor.scale.set(settings.scale, settings.scale, settings.scale);
+
+        // For Reflector, we update the color property
+        if (this.floor.getRenderTarget) { // Check if it's a Reflector
+            this.floor.getMaterial().color.setHex(settings.color);
+        }
+    }
+
+    setupDebugGUI() {
+        if (!window.lil) return;
+        const gui = new lil.GUI();
+        const floorFolder = gui.addFolder('Floor Config');
+        const settings = this.materialSettings.floor;
+
+        floorFolder.add(settings, 'positionY', -2, 2, 0.001).name('Position Y').onChange(() => this.updateFloorMaterial());
+        floorFolder.add(settings, 'scale', 0.1, 10, 0.01).name('Scale').onChange(() => this.updateFloorMaterial());
+        floorFolder.addColor(settings, 'color').name('Reflection Color').onChange(() => this.updateFloorMaterial());
+
+        // These properties are stored for logging even if Reflector doesn't use them directly
+        floorFolder.add(settings, 'metalness', 0, 1, 0.01).name('Metalness');
+        floorFolder.add(settings, 'roughness', 0, 1, 0.01).name('Roughness');
+
+        floorFolder.open();
+
+        // Add Global folder for general tweaks
+        const globalFolder = gui.addFolder('Global Lights');
+        const global = this.materialSettings.global;
+        globalFolder.add(global, 'ambientIntensity', 0, 5, 0.01).name('Ambient').onChange(() => {
+            this.ambientLight.intensity = global.ambientIntensity;
+        });
+        globalFolder.add(global, 'mainLightIntensity', 0, 5, 0.01).name('Main Light').onChange(() => {
+            this.mainLight.intensity = global.mainLightIntensity;
+        });
+        globalFolder.add(global, 'rimLightIntensity', 0, 10, 0.01).name('Rim Light').onChange(() => {
+            this.rimLight.intensity = global.rimLightIntensity;
+        });
+        globalFolder.add(global, 'exposure', 0, 3, 0.01).name('Exposure').onChange(() => {
+            this.renderer.toneMappingExposure = global.exposure;
+        });
+
+        const bloomFolder = gui.addFolder('Bloom');
+        bloomFolder.add(this.bloomPass, 'strength', 0, 5, 0.01);
+        bloomFolder.add(this.bloomPass, 'radius', 0, 3, 0.01);
+        bloomFolder.add(this.bloomPass, 'threshold', 0, 1, 0.01);
+
+        // Logging Utility
+        gui.add({
+            logSettings: () => {
+                const exportData = {
+                    materialSettings: this.materialSettings,
+                    bloom: {
+                        strength: this.bloomPass.strength,
+                        radius: this.bloomPass.radius,
+                        threshold: this.bloomPass.threshold
+                    },
+                    camera: {
+                        position: this.camera.position,
+                        rotation: this.camera.rotation
+                    }
+                };
+                console.log("--- 3D VIEWER SETTINGS ---");
+                console.log(JSON.stringify(exportData, null, 2));
+                alert("Settings logged to console! (F12 to view)");
+            }
+        }, 'logSettings').name('LOG SETTINGS TO CONSOLE');
+
+        gui.close();
+    }
 }
 
 // Initialize the application
@@ -621,19 +725,57 @@ function init() {
 
     // Mouse Tooltip Logic
     const tooltip = document.getElementById('cursor-tooltip');
+    let mouseX = 0, mouseY = 0, lastX = 0, lastY = 0, rotation = 0;
 
     document.addEventListener('mousemove', (e) => {
         if (!tooltip) return;
-        // Immediate position update
-        tooltip.style.left = e.clientX + 'px';
-        tooltip.style.top = e.clientY + 'px';
+
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+
+        // Calculate velocity (delta)
+        const dx = mouseX - lastX;
+        const dy = mouseY - lastY;
+
+        // Target rotation based on horizontal speed
+        const targetRotation = Math.max(-15, Math.min(15, dx * 0.5));
+        rotation += (targetRotation - rotation) * 0.15;
+
+        // --- Boundary Check ---
+        const padding = 20;
+        let left = mouseX + padding;
+        let top = mouseY + padding;
+
+        const tooltipWidth = tooltip.offsetWidth || 150;
+        const tooltipHeight = tooltip.offsetHeight || 40;
+
+        // Flip to left if hitting right edge
+        if (left + tooltipWidth > window.innerWidth) {
+            left = mouseX - tooltipWidth - padding;
+        }
+        // Flip to top if hitting bottom edge
+        if (top + tooltipHeight > window.innerHeight) {
+            top = mouseY - tooltipHeight - padding;
+        }
+
+        tooltip.style.transform = `translate(${left}px, ${top}px) rotate(${rotation}deg) scale(${tooltip.classList.contains('visible') ? 1 : 0.95})`;
+
+        lastX = mouseX;
+        lastY = mouseY;
     });
 
     const setupTooltipTriggers = () => {
-        const interactiveElements = document.querySelectorAll('[title], [data-tooltip]');
+        const interactiveElements = document.querySelectorAll('[title], [data-tooltip], .control-btn, .btn-primary, .btn-secondary, .theme-toggle-btn, .mobile-3d-btn');
 
         interactiveElements.forEach(el => {
-            const content = el.getAttribute('title') || el.getAttribute('data-tooltip');
+            let content = el.getAttribute('title') || el.getAttribute('data-tooltip');
+
+            // If it's a control button without a direct title, look at the mobile-label
+            if (!content && el.classList.contains('control-btn')) {
+                const label = el.parentElement.querySelector('.mobile-label');
+                if (label) content = label.textContent;
+            }
+
             if (!content) return;
 
             // Remove native title to prevent double tooltip
